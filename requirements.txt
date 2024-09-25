@@ -8,3 +8,10 @@ channels
 channels-redis
 daphne
 pandas
+numpy
+fitz
+pdfplumber 
+pikepdf 
+scikit-learn
+spaCy
+transformers 
