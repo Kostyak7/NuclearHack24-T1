@@ -1,0 +1,10 @@
+Django==4.0.6
+djangorestframework~=3.14.0
+django-cors-headers==3.13.0
+djoser
+djangorestframework-simplejwt
+poster3
+channels
+channels-redis
+daphne
+pandas

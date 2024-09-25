@@ -1,0 +1,9 @@
+**/venv/
+**/__pycache__/
+**/.idea/
+
+**/templates/
+**/static/
+**/files/
+**/build/
+.sqlite3
