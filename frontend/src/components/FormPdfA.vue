@@ -8,10 +8,10 @@
                     <input ref="file" class="form-control" type="file" id="formFile" accept=".pdf" v-on:change="handleFileUpload()">
                 </div>
                 <div class="form__line">
-                    <label class="form-label">Формат</label>
-                    <select ref="format" class="form-select" aria-label="Type of " id="formPDFFormat" v-model="formPDFFormat">
-                        <option selected value="ADD">Стандарт</option>
-                        <option value="TWO-SIDE">Нефор</option>
+                    <label class="form-label">Язык документа</label>
+                    <select ref="lang" class="form-select" aria-label="Type of " id="formPDFFormat" v-model="formPDFFormat">
+                        <option selected value="RUS">Русский</option>
+                        <option value="ENG">Английский</option>
                     </select>
                 </div>
                 <div @click="showPreview">
@@ -48,8 +48,7 @@ export default {
 
       showPdfPreview: false,
       isFileExists: false,
-      fileColor: this.getSettings() % 2 === 1 ? 'BLACK' : 'COLOR',
-      filePrintFormat: this.getSettings() <= 2 ? 'ONE-SIDE' : 'TWO-SIDE',
+      fileLang: this.getSettings() % 2 === 1 ? 'RUS' : 'ENG',
       pdfSource: '',
 
       hostname: 'http://localhost:8000',
@@ -108,7 +107,7 @@ export default {
               {
                 params: {
                   color: this.$refs.color.value,
-                  format: this.$refs.format.value,
+                  lang: this.$refs.lang.value,
                   amount: this.$refs.amount.value,
                 }
               },
