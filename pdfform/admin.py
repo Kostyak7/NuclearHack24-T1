@@ -1,4 +1,4 @@
 from django.contrib import admin
-from .models import FileForPrint
+from .models import FileForProccess
 
-admin.site.register(FileForPrint)
+admin.site.register(FileForProccess)

@@ -99,7 +99,7 @@ def detect_toc(pages: dict) -> list:
 
 def extract_data(filepath: str) -> dict:
     parsed_text = parse_pdf(filepath)
-    toc = detect_toc(parsed_text) 
+    toc = detect_toc(parsed_text)
     hyperlinks = extract_links_from_pdf(filepath, toc)
 
     return {

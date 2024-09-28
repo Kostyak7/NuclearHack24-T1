@@ -9,7 +9,7 @@
                 </div>
                 <div class="form__line">
                     <label class="form-label">Язык документа</label>
-                    <select ref="lang" class="form-select" aria-label="Type of " id="formPDFFormat" v-model="formPDFFormat">
+                    <select ref="lang" class="form-select" aria-label="Type of " id="formPDFLang" v-model="formPDFLang">
                         <option selected value="RUS">Русский</option>
                         <option value="ENG">Английский</option>
                     </select>
@@ -44,24 +44,17 @@ export default {
   data() {
     return {
       file: '',
-      code: '',
+      fileID: '',
 
       showPdfPreview: false,
       isFileExists: false,
-      fileLang: this.getSettings() % 2 === 1 ? 'RUS' : 'ENG',
+      formPDFLang: 'RUS',
       pdfSource: '',
 
-      hostname: 'http://localhost:8000',
+      hostname: 'http://localhost:8000', // 'http://45.10.245.207:80'
     }
   },
   methods: {
-    getSettings() {
-      if (! (this.$route.params.printSet)) {
-        return 1
-      } else {
-        return Number(this.$route.params.printSet)
-      }
-    },
     handleFileUpload() {
       if (this.$refs.file.files[0]) {
         this.file = this.$refs.file.files[0];
@@ -72,7 +65,7 @@ export default {
       if (!this.file) return false;
       let filename_type = this.file.name.split('.');
       console.log(this.file.name)
-      return !(filename_type[filename_type.length - 1].toLowerCase() !== "pdf" || this.file.size > 100 * 1024 * 1024);
+      return !(filename_type[filename_type.length - 1].toLowerCase() !== "pdf" || this.file.size > 200 * 1024 * 1024);
     },
     convertToBase64() {
       let fileReader = new FileReader();
@@ -96,19 +89,14 @@ export default {
 
       let formData = new FormData();
       formData.append('file', this.file);
-      let amount_value = parseInt(this.$refs.amount.value)
-      if (amount_value > 10) amount_value = 10
-      if (amount_value < 1) amount_value = 1
-      this.$refs.amount.value = amount_value
+      
       await axios
           .post(
               this.hostname + '/v1/form/filled/',
               formData,
               {
                 params: {
-                  color: this.$refs.color.value,
                   lang: this.$refs.lang.value,
-                  amount: this.$refs.amount.value,
                 }
               },
               {
@@ -118,12 +106,12 @@ export default {
               }
           )
           .then(({data}) => {
-            if (data.validate && data.code) {
-              this.code = data.code
+            if (data.validate && data.fileID) {
+              this.fileID = data.fileID
             }
           })
-      if (this.code) {
-        this.$router.push({name: 'code-page', params: {code: this.code}})
+      if (this.fileID) {
+        this.$router.push({name: 'wait-result-page', params: {fileID: this.fileID}})
       }
     }
   }

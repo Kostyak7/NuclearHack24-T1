@@ -10,6 +10,8 @@ export default {
   components: {
     FormPdfA,
   },
+    beforeMount() {
+    }
 }
 </script>
 

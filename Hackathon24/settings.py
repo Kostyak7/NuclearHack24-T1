@@ -10,11 +10,11 @@ SECRET_KEY = 'django-insecure-)e2*$^p)hzuh-edpg_g163c4d*_0d5)d)bdw4dxd@!tb95rrso
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '45.10.245.207']
 
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'http://localhost']
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'http://localhost', 'http://45.10.245.207']
 
-CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://45.10.245.207:80']
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
@@ -40,6 +40,8 @@ INSTALLED_APPS = [
 
     'main',
     'pdfform',
+    'wait',
+    'result',
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -97,6 +99,7 @@ DATABASES = {
     }
 }
 
+'''
 CHANNEL_REDIS_HOST = ("127.0.0.1", 6379)
 CHANNEL_LAYERS = {
     "default": {
@@ -106,7 +109,7 @@ CHANNEL_LAYERS = {
         #     "hosts": [CHANNEL_REDIS_HOST],
         # },
     },
-}
+}'''
 
 
 # Password validation

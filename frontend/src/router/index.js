@@ -1,5 +1,6 @@
 import MainPage from "@/pages/MainPage";
 import FormPage from "@/pages/FormPage";
+import WaitResultPage from "@/pages/WaitResultPage";
 import ResultPage from "@/pages/ResultPage";
 import {createRouter, createWebHistory} from "vue-router";
 
@@ -20,7 +21,12 @@ const routes = [
         component: FormPage,
     },
     {
-        path: '/v1/result',
+        path: '/v1/wait/:fileID',
+        name: "wait-result-page",
+        component: WaitResultPage,
+    },
+    {
+        path: '/v1/result/:fileID',
         name: "result-page",
         component: ResultPage,
     },

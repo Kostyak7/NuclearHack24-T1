@@ -1,13 +1,13 @@
 <template>
-    <result-a></result-a>
+    <wait-a></wait-a>
   </template>
   
   <script>
-  import ResultA from "@/components/ResultA";
+  import WaitA from "@/components/WaitA";
   
   export default {
-    name: "ResultPage",
-    components: { ResultA, },
+    name: "WaitResultPage",
+    components: { WaitA, },
     beforeMount() {
     }
   }

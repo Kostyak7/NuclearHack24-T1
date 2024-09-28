@@ -13,8 +13,10 @@ call pip install -r requirements.txt
 call deactivate
 cd frontend
 call npm i vue-cli-service
-call npm audit dix
+call npm audit fix
 cd ..
+
+goto end
 
 setlocal
 set "DESTINATION=/algorithms/my_models/" 
