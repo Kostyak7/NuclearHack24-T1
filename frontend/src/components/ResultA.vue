@@ -24,7 +24,7 @@
       return {
         fileID: null,
 
-        hostname: 'http://localhost:8000', // 'http://45.10.245.207:80'
+        hostname: 'https://yourproject7.ru:80', // 'http://localhost:8000'
       }
     },
     components: { HeaderA },
@@ -34,7 +34,7 @@
     methods: {
         async downloadFile() {
             try {
-                const response = await axios.get(`${this.hostname}/path/to/your/file/${this.fileID}`, {
+                const response = await axios.get(`${this.hostname}/v1/result/${this.fileID}`, {
                     responseType: 'blob'
                 });
                 
