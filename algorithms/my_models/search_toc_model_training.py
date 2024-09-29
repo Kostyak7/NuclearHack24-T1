@@ -2,10 +2,13 @@ import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 
 import training_config as tcf
+from dataset_docoder import get_train_dataset
 
 
-train_texts = ["Содержание", "Другой текст"] # Сюда текста
-train_labels = [1, 0]  # Сюда флаги
+train_labels, train_texts = get_train_dataset('cooked_files')
+# train_texts  = ["Содержание", "Другой текст"] # Сюда текста
+# train_labels = [1, 0]  # Сюда флаги
+print(train_labels, train_texts, sep='\n\n\n' + '-' * 160 + '\n\n')
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-multilingual-cased')
 train_encodings = tokenizer(train_texts, truncation=True, padding=True)
