@@ -22,5 +22,6 @@ Pillow
 pymupdf
 pikepdf
 PyPDF2
+reportlab
 pdf2image
 pdfplumber 

@@ -30,7 +30,7 @@
         intervalId: null,  
         fileID: null,
 
-        hostname: 'https://yourproject7.ru:80', // 'http://localhost:8000'
+        hostname: 'https://yourproject7.ru', // 'http://localhost:8000'
       }
     },
     components: { HeaderA },

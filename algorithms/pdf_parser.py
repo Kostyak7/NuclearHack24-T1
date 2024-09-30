@@ -23,17 +23,22 @@ def check_filepath(filepath: str, suffix: str = ".pdf") -> bool:
     filepath = Path(filepath)
     return filepath.exists() and filepath.is_file() and filepath.suffix == suffix
 
-# todo пустые и пробелы
+
+def check_text(text: str) -> bool:
+    text_striped = text.strip()
+    return len(text_striped) > 1 and not text_striped.isdigit()
+
+
 def parse_page_to_text(page, page_num: int, filepath: str, lang: str = "rus") -> str:
     text = page.extract_text()
-    if text and text.strip():  
-        return text 
+    if text and text.strip():
+        return text if check_text(text) else "" 
     
     ocr_text = ""
     images = convert_from_path(filepath, first_page=page_num, last_page=page_num)
     for image in images:
         ocr_text += pytesseract.image_to_string(image, lang=lang)  
-    return ocr_text
+    return ocr_text if check_text(ocr_text) else ""
 
 
 def full_parse_pdf(filepath: str, lang: str = "rus") -> dict:    
@@ -142,7 +147,7 @@ def fast_extract_data(filepath: str, lang: str = "rus") -> dict:
     }
 
 
-# Здесь тестируем модель выявляющее существующее содеражание (перед продом обязательно удалить)
+# Здесь тестируем модель выявляющую существующее содеражание (перед продом обязательно удалить)
 if __name__ == '__main__':
     # file_path = cf.TEST_SCAN_NO_TOC_FILE_PATH
     # file_path = cf.TEST_SCAN_WITH_TOC_FILE_PATH

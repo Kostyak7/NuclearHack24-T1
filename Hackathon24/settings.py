@@ -16,7 +16,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '45.10.245.207', 'yourproject7.ru']
 
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'http://localhost', 'http://45.10.245.207', 'https://yourproject7.ru']
 
-CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://45.10.245.207:80', 'https://yourproject7.ru:80']
+CORS_ALLOWED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://45.10.245.207:80', 'https://yourproject7.ru']
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (

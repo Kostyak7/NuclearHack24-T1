@@ -16,3 +16,7 @@ TESSERACT_CMD = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 MY_MODELS_DIR_PATH = 'my_models/'
 SEARCH_TOC_MODEL_DIR_PATH = MY_MODELS_DIR_PATH + tcf.SEARCH_TOC_MODEL_DIR_PATH
 CREATE_TOC_MODEL_DIR_PATH = MY_MODELS_DIR_PATH + tcf.CREATE_TOC_MODEL_DIR_PATH
+
+KEY_STRUCTURE_WORDS = set(['глава', 'часть', 'раздел', 'введение', 'вывод', 'заключение', 'подраздел'])
+
+OUTPUT_FILENAME_ADDITIVE = '_output'
