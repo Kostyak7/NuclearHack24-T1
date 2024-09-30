@@ -1,10 +1,9 @@
-import os
 import PyPDF2
 import pytesseract
 from pathlib import Path
 from pdf2image import convert_from_path
 
-import training_config as tcf
+from . import training_config as tcf
 
 
 def get_train_dataset_from_txt(folder_path: str, MAX_N: int = 200) -> list:

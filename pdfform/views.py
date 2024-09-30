@@ -9,13 +9,15 @@ from uuid import uuid4
 import os
 from django.utils import timezone
 
+from .proccess_async import process_form_data_async
+
 
 class FileFormView(View):
     def get(self, request, *args, **kwargs):
         return render(request, '_base_vue.html')
 
 
-def handle_uploaded_file(f, params: dict) -> str:
+def handle_uploaded_file(f, params: dict) -> list:
     if not os.path.exists(FileForProccess.file_path):
         os.mkdir(FileForProccess.file_path)
         
@@ -28,8 +30,22 @@ def handle_uploaded_file(f, params: dict) -> str:
     with open(FileForProccess.file_path + '/' + new_filename, 'wb+') as destination:
         for chunk in f.chunks():
             destination.write(chunk)
-    FileForProccess.objects.create(filename=new_filename, file_id=fileID, upload_time=timezone.now(), lang=params['lang'])
-    return fileID
+    db_object = None
+    toc_range = [
+        -1 if params["toc_range"][0] is None else params["toc_range"][0],
+        -1 if params["toc_range"][1] is None else params["toc_range"][1],
+    ]
+    has_toc = params['has_toc']
+    if has_toc is not None and has_toc and (toc_range[0] <= 0 or toc_range[1] <= 0 or toc_range[1] < toc_range[0]):
+        has_toc = None
+    db_object = FileForProccess.objects.create(filename=new_filename, 
+                                               file_id=fileID, 
+                                               upload_time=timezone.now(), 
+                                               lang=params['lang'], 
+                                               has_toc_hint=has_toc,
+                                               toc_start_hint=toc_range[0],
+                                               toc_end_hint=toc_range[1])
+    return [fileID, db_object]
 
 
 def validate_params(data: dict):
@@ -54,13 +70,20 @@ def file_form_filled(request):
     print(request)
     if request.method == 'POST':
         params = validate_params({
-            'lang': request.GET.get('lang', None),
+            'lang': request.GET.get('lang', 'RUS'),
+
+            'has_toc': request.GET.get('has_toc_hint', None),
+            'toc_range': [
+                request.GET.get('toc_range_start_hint', None), 
+                request.GET.get('toc_range_end_hint', None)
+                ]
         })
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid() and params and validate_file(request.FILES['file']):
-            fileID = handle_uploaded_file(request.FILES['file'], params)
-            return JsonResponse({"validate": True, "fileID": fileID})
-    return JsonResponse({"validate": False, "fileID": None})
+            fileID, db_object = handle_uploaded_file(request.FILES['file'], params)
+            process_form_data_async(db_object.id) # здесь вызываем алгоритм
+            return JsonResponse({"validate": True, "fileID": fileID}, status=201)
+    return JsonResponse({"validate": False, "fileID": None}, status=405)
 
 
 def validate_file_id(fileID):

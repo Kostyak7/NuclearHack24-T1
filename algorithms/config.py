@@ -1,8 +1,11 @@
-import my_models.training_config as tcf
+from .my_models import training_config as tcf
 
 TRAIN_MODE = True
 
-TRAIN_DATA_DIR_PATH = 'train_data/'
+PROJECT_PATH = 'C:/Proga/projects/NuclearHack24-T1/'
+ALGORITHMS_PATH = PROJECT_PATH + 'algorithms/'
+
+TRAIN_DATA_DIR_PATH = ALGORITHMS_PATH + '/train_data/'
 TOC_TRAIN_FILE_PATH = TRAIN_DATA_DIR_PATH + 'toc.txt'
 
 
@@ -13,10 +16,11 @@ TEST_TEXT_WITH_TOC_FILE_PATH = TRAIN_DATA_DIR_PATH + 'Кировский_зав�
 
 TESSERACT_CMD = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
 
-MY_MODELS_DIR_PATH = 'my_models/'
+MY_MODELS_DIR_PATH = ALGORITHMS_PATH + 'my_models/'
 SEARCH_TOC_MODEL_DIR_PATH = MY_MODELS_DIR_PATH + tcf.SEARCH_TOC_MODEL_DIR_PATH
 CREATE_TOC_MODEL_DIR_PATH = MY_MODELS_DIR_PATH + tcf.CREATE_TOC_MODEL_DIR_PATH
 
 KEY_STRUCTURE_WORDS = set(['глава', 'часть', 'раздел', 'введение', 'вывод', 'заключение', 'подраздел'])
 
 OUTPUT_FILENAME_ADDITIVE = '_output'
+LINKED_PAGES_FILENAME_ADDITIVE = '_linked_pages'

@@ -1,15 +1,12 @@
-import re
 import fitz 
 import torch
 import PyPDF2
 import pytesseract
-from PIL import Image
 from pathlib import Path
-from transformers import pipeline
 from pdf2image import convert_from_path
 from transformers import BertTokenizer, BertForSequenceClassification
 
-import config as cf
+from . import config as cf
 
 
 pytesseract.pytesseract.tesseract_cmd = cf.TESSERACT_CMD
@@ -116,10 +113,30 @@ def full_extract_data(filepath: str, lang: str = "rus") -> dict:
     }
 
 
-def fast_extract_data(filepath: str, lang: str = "rus") -> dict:
+def fast_extract_data(filepath: str, lang: str = "rus", hints: dict = {}) -> dict:
     parsed_text = {}
-    toc_pages = [None] * 2
 
+    if "has_toc" in hints and hints["has_toc"] and "toc_range" in hints:
+        toc_pages = hints["toc_range"]
+
+        is_correct_hint = True
+        for page_num in range(toc_pages[0], toc_pages[1] + 1):
+            page = reader.pages[page_num]
+            parsed_text[page_num + 1] = parse_page_to_text(page, page_num=page_num + 1, filepath=filepath, lang=lang)
+
+            if not is_table_of_contents(parsed_text[page_num + 1]):
+                is_correct_hint = False
+
+        if is_correct_hint:
+            hyperlinks = extract_links_from_pdf(filepath, toc_pages)
+            return {
+                'pages': parsed_text,
+                'has_toc':  True,
+                'toc_range': toc_pages,
+                'has_hyperlinks': len(hyperlinks) > 0
+            }
+    
+    toc_pages = [None] * 2
     with open(filepath, 'rb') as file:
         reader = PyPDF2.PdfReader(file)
         pages_amount = len(reader.pages)

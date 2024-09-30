@@ -1,8 +1,8 @@
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 
-import training_config as tcf
-from dataset_docoder import get_train_dataset
+from . import training_config as tcf
+from .dataset_docoder import get_train_dataset
 
 
 train_labels, train_texts = get_train_dataset('cooked_files')

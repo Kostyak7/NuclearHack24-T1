@@ -14,6 +14,25 @@
                         <option value="ENG">Английский</option>
                     </select>
                 </div>
+                
+                <div>
+                  <p style="color: #843A4E; font-size: 15px">Вы можете попробовать ускорить обработку, указав некоторые сведения о файле ниже.</p>
+                </div>
+
+                <div class="form__line">
+                  <label class="form-label">В файле есть содержание?</label>
+                    <select ref="has_toc_hint" class="form-select" aria-label="Type of " id="formPDFTOCHint" v-model="formPDFTOCHint">
+                      <option :value="NaN">Не скажу</option>
+                        <option :value="true">Да</option>
+                        <option :value="false">Нет</option>
+                    </select>
+                </div>
+
+                <div class="form__line" v-if="formPDFTOCHint">
+                  <label class="form-label">На каких странице(ах) оно находится?</label>
+                  <input ref="toc_range_hint" class="form-control" type="text" id="formPDFTOCRangeHint" v-model="formPDFTOCRangeHint" placeholder="К примеру: 2 или 3-4">
+                </div>
+
                 <div @click="showPreview">
                     <a class="form__preview-button" :class="{'form__preview-button_active' : isFileExists}" href="#">Посмотреть превью</a>
                 </div>
@@ -49,6 +68,8 @@ export default {
       showPdfPreview: false,
       isFileExists: false,
       formPDFLang: 'RUS',
+      formPDFTOCHint: NaN,
+      formPDFTOCRangeHint: '',
       pdfSource: '',
 
       hostname: 'https://yourproject7.ru', // 'http://localhost:8000'
@@ -90,6 +111,21 @@ export default {
       let formData = new FormData();
       formData.append('file', this.file);
       
+      let has_toc_hint = this.$refs.has_toc_hint.value;
+      let toc_range_start_hint = NaN;
+      let toc_range_end_hint = NaN;
+      if (!isNaN(has_toc_hint) && has_toc_hint && has_toc_hintthis.$refs.toc_range_hint) {
+        let toc_range_value = NaN;
+        if (!isNaN(toc_range_value)) {
+          toc_range_end_hint = toc_range_start_hint = parseInt(toc_range_value, 10);
+        } 
+        else if (/^\d+-\d+$/.test(toc_range_value)) {
+          const [start, end] = toc_range_value.split('-').map(num => parseInt(num, 10));
+          toc_range_start_hint = start;
+          toc_range_end_hint = end;
+        }
+      }
+
       await axios
           .post(
               this.hostname + '/v1/form/filled/',
@@ -97,6 +133,10 @@ export default {
               {
                 params: {
                   lang: this.$refs.lang.value,
+
+                  has_toc_hint: has_toc_hint,
+                  toc_range_start_hint: toc_range_start_hint,
+                  toc_range_end_hint: toc_range_end_hint
                 }
               },
               {
