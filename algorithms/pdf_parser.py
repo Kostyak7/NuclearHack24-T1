@@ -1,17 +1,16 @@
+import re
 import fitz 
 import torch
 import PyPDF2
 import pytesseract
 from pathlib import Path
 from pdf2image import convert_from_path
-from transformers import BertTokenizer, BertForSequenceClassification
 
+from .models_cltok import search_toc_classifier, search_toc_tokenizer
 from . import config as cf
 
 
 pytesseract.pytesseract.tesseract_cmd = cf.TESSERACT_CMD
-toc_classifier = BertForSequenceClassification.from_pretrained(cf.SEARCH_TOC_MODEL_DIR_PATH)
-tokenizer = BertTokenizer.from_pretrained(cf.SEARCH_TOC_MODEL_DIR_PATH)
 
 
 def check_filepath(filepath: str, suffix: str = ".pdf") -> bool:
@@ -73,14 +72,17 @@ def extract_links_from_pdf(filepath: str, toc_pages: list) -> dict:
 
 def is_table_of_contents(text: str) -> bool:
     upbound = min(len(text), 512)
-    input = tokenizer([text[:upbound]], truncation=True, padding=True, return_tensors='pt')
+    input = search_toc_tokenizer([text[:upbound]], truncation=True, padding=True, return_tensors='pt')
     with torch.no_grad():
-        logits = toc_classifier(**input).logits
+        logits = search_toc_classifier(**input).logits
 
     predictions = torch.argmax(logits, dim=-1)
 
     for pred in predictions:
-        return pred.item()
+        if pred.item():
+            return True
+        pattern = re.compile(r'^\s*(' + '|'.join(re.escape(word) for word in cf.TOC_SEARCH_KEYWORDS) + r')\s*$', re.MULTILINE)
+        return bool(pattern.search(text.lower()))
 
 
 def detect_toc_in_file(pages: dict) -> list:
@@ -162,19 +164,3 @@ def fast_extract_data(filepath: str, lang: str = "rus", hints: dict = {}) -> dic
         'toc_range': toc_pages,
         'has_hyperlinks': len(hyperlinks) > 0
     }
-
-
-# Здесь тестируем модель выявляющую существующее содеражание (перед продом обязательно удалить)
-if __name__ == '__main__':
-    # file_path = cf.TEST_SCAN_NO_TOC_FILE_PATH
-    # file_path = cf.TEST_SCAN_WITH_TOC_FILE_PATH
-    # file_path = cf.TEST_TEXT_NO_TOC_FILE_PATH
-    file_path = cf.TEST_TEXT_WITH_TOC_FILE_PATH
-
-    parsed_text = full_parse_pdf(file_path)
-    for page, text in parsed_text.items():
-        print(f"Page {page}:")
-        print(text)
-        print("\n" + "-"*40 + "\n")
-    
-    print(detect_toc_in_file(parsed_text))

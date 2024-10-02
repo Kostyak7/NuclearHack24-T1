@@ -1,13 +1,10 @@
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 
-import training_config as tcf
-from dataset_docoder import get_train_dataset_from_txt
-# from . import training_config as tcf
-# from .dataset_docoder import get_train_dataset_from_txt
+from . import training_config as tcf
+from .dataset_docoder import get_train_dataset_from_txt
 
-
-train_labels, train_texts = get_train_dataset_from_txt('toc_cooked_files')
+train_labels, train_texts = get_train_dataset_from_txt('title_cooked_files')
 # train_texts  = ["Содержание", "Другой текст"] # Сюда текста
 # train_labels = [1, 0]  # Сюда флаги
 print(train_labels, train_texts, sep='\n\n\n' + '-' * 160 + '\n\n')
@@ -33,7 +30,7 @@ train_dataset = CustomDataset(train_encodings, train_labels)
 model = BertForSequenceClassification.from_pretrained('bert-base-multilingual-cased', num_labels=2)
 
 training_args = TrainingArguments(
-    output_dir=tcf.SEARCH_TOC_MODEL_DIR_PATH,
+    output_dir=tcf.SEARCH_TITLE_MODEL_DIR_PATH,
     num_train_epochs=3,
     per_device_train_batch_size=8,
     save_steps=10_000,
@@ -48,5 +45,5 @@ trainer = Trainer(
 
 trainer.train()
 
-model.save_pretrained(tcf.SEARCH_TOC_MODEL_DIR_PATH)
-tokenizer.save_pretrained(tcf.SEARCH_TOC_MODEL_DIR_PATH)
+model.save_pretrained(tcf.SEARCH_TITLE_MODEL_DIR_PATH)
+tokenizer.save_pretrained(tcf.SEARCH_TITLE_MODEL_DIR_PATH)

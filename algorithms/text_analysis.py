@@ -1,12 +1,14 @@
 import os
+import re
 import fitz
+import torch
+from math import ceil
 from PyPDF2 import PdfReader, PdfWriter
-from reportlab.pdfgen import canvas
-from io import BytesIO
 
 from . import config as cf
-from .my_models.create_toc_model_training import generate_headline
-from .pdf_parser import fast_extract_data, full_extract_data
+from .models_cltok import search_title_classifier, search_title_tokenizer
+from .my_models.create_toc_model import generate_headline, text_tiling
+from .pdf_parser import fast_extract_data, full_extract_data, parse_page_to_text
 
 
 def extract_number_from_end(text: str) -> int:
@@ -24,35 +26,40 @@ def extract_toc(pages: dict, toc_range: list) -> dict:
     toc = {}
 
     for i in range(toc_range[0], toc_range[1] + 1):
-        lines = pages[i].spltlines()
+        lines = pages[i].splitlines()
         for line in lines:
             number_from_end = extract_number_from_end(line)
-            if line is not None:
+            if line is not None and len(line) and number_from_end is not None:
                 toc[line.strip()] = number_from_end
     return toc
 
 
 def create_hyperlinks_for_existing_toc_not_scan(filepath: str, toc: dict, toc_range: list) -> None:
+    output_filepath = os.path.splitext(filepath)[0] + cf.OUTPUT_FILENAME_ADDITIVE + '.pdf'
     doc = fitz.open(filepath)
     for page_num in range(toc_range[0] - 1, toc_range[1]):
         page = doc.load_page(page_num)
-        blocks = page.get_text("blocks")
+        blocks = page.get_text("dict")["blocks"]
+        c = 0
         for block in blocks:
-            x1, y1, x2, y2, text, *_ = block
-            lines = text.split('\n')
-
-            y_offset = y1
-            for line in lines:
-                line_text = line.strip()
+            c += 1
+            if c < 2 or "lines" not in block:
+                continue
+            for line in block["lines"]:
+                y1 = line["bbox"][1]
+                y2 = line["bbox"][3]
+                
+                line_text = "".join(span["text"] for span in line["spans"]).strip()
+                
                 if line_text in toc:
-                    rect = (x1, y_offset, x2, y_offset + (y2 - y1) / len(lines))
+                    rect = fitz.Rect(block["bbox"][0], y1, block["bbox"][2], y2)
                     page.insert_link({
                         "kind": fitz.LINK_GOTO,
-                        "from": rect,  
+                        "from": rect,
                         "page": toc[line_text] - 1,
                     })
-                y_offset += (y2 - y1) / len(lines)
-    doc.save(filepath)
+        
+    doc.save(output_filepath)
     doc.close()
 
 
@@ -72,20 +79,45 @@ def insert_exsisting_toc_for_scan(filepath: str, toc: str, toc_range: list):
 
 def try_extract_structure(pages: dict) -> dict:
     toc = {}
+    num_pattern = re.compile(r'^(?P<number>\d+(\.\d+)*)\.\s+(?P<text>[^.!?,]*[a-zA-Zа-яА-Я])$')
+    kw_pattern = re.compile(r'^[\w\s]+$')
+    prev_number = [0]
 
     for page_num, text in pages.items():
         lines = text.splitlines()
         for line in lines:
             stripped_line = line.strip()
             first_word = stripped_line.split()[0] if stripped_line else ""
-            if first_word.lower() in cf.KEY_STRUCTURE_WORDS:
+            match_str = num_pattern.match(stripped_line)
+            if match_str:
+                print(match_str.group(0), match_str.group(1))
+                cur_number = list(map(int, match_str.group(1).split('.')))
+                if cur_number and cur_number > prev_number:
+                    prev_number = cur_number
+                    toc[stripped_line] = page_num
+            if first_word.lower() in cf.KEY_STRUCTURE_WORDS and kw_pattern.match(stripped_line):
                 toc[stripped_line] = page_num
-
     return toc if len(toc) > 1 else None
 
 
 def text_tiling_toc_generating(pages: dict) -> dict:
     toc = {}
+    text = ""
+    for page_num, page_text in pages.items():
+        if page_num < 5:
+            if is_title_page(page_text):
+                text += page_text            
+        else:
+            text += page_text
+
+    segments = text_tiling(text, block_size=2, threshold=0.15)
+    segment_index = 0
+    for page_num, page_text in pages.items():
+        if segments[segment_index][:min(len(segments[segment_index], 40))] in page_text:
+            chapter = generate_headline(segments[segment_index], n_words=8,)
+            toc[chapter] = page_num
+            segment_index += 1
+    print(toc)
     return toc
 
 
@@ -120,12 +152,7 @@ def t5_toc_generating(pages: dict, max_paragraph_number: int = 20, max_word_numb
                 last_page_num = page_num
             else:
                 accumulated_text += paragraph
-    
-    for header, page_num in toc.items():
-        if len(header) > 160:
-            print(f'{header}.........{page_num}')
-        else:
-            print(header, '.' * (160 - len(header)), page_num, sep='')
+
     return toc
 
 
@@ -141,48 +168,94 @@ def create_toc_not_exist(pages: str) -> dict:
     return t5_toc_generating(pages)
 
 
-def create_pdf_page(text: str) -> PdfReader:
-    packet = BytesIO()
-    c = canvas.Canvas(packet)
-    c.drawString(100, 750, text)
-    c.save()
-    packet.seek(0)
-    return PdfReader(packet)
+def split_text_into_lines(text: str, max_length: int = 100) -> list:
+    words = text.split()
+    lines = []
+    current_line = ""
+
+    for word in words:
+        if len(current_line) + len(word) + 1 <= max_length:
+            if current_line:
+                current_line += " "  
+            current_line += word
+        else:
+            lines.append(current_line) 
+            current_line = word
+
+    if current_line:
+        lines.append(current_line)
+
+    return lines
 
 
 def insert_toc(filepath: str, toc: dict, page_number: int = 2) -> None:
-    linked_pages_filepath = os.path.splitext(file_path)[0] + cf.LINKED_PAGES_FILENAME_ADDITIVE + '.pfd'
-    new_page_amount = 1
-    c = canvas.Canvas(linked_pages_filepath)
-    for link_text, page_num in toc.items():
-        x, y = 100, 75 # todo перемещаться правильно
-        if y > 500:
-            y = 75
-            new_page_amount += 1
-        c.drawString(x, y, link_text)
-        c.linkRect("", (x, y, x + 100, y + 10), destination=page_num - 1, relative=1)
-    c.save()
+    linked_pages_filepath = os.path.splitext(filepath)[0] + cf.LINKED_PAGES_FILENAME_ADDITIVE + '.pdf'
+    sample_doc = fitz.open()
+    new_page_amount = ceil((len(toc) * (cf.DEFAULT_TEXT_SIZE + cf.DEFAULT_LINE_SPACING) + 200) / 860)
+    for _ in range(new_page_amount):
+        sample_doc.new_page()
+    sample_doc.save(linked_pages_filepath)
+    
+    output_filepath = os.path.splitext(filepath)[0] + cf.OUTPUT_FILENAME_ADDITIVE + '.pdf'
+    target_doc = fitz.open(filepath)
+    target_doc.insert_pdf(sample_doc, from_page=0, to_page=new_page_amount - 1)
+    sample_doc.close()
+    for i in range(new_page_amount):
+        target_doc.move_page(target_doc.page_count - new_page_amount + i, page_number - 1 + i)
+    
+    cur_page = target_doc.load_page(page_number - 1)
+    cur_page.insert_font(fontfile=cf.ARIAL_FONT_PATH, fontname="F0")
+    cur_page.insert_font(fontfile=cf.ARIAL_BOLD_FONT_PATH, fontname="F0_BOLD")
+    cur_page.insert_text((80, 50), "Содержание", fontsize=cf.DEFAULT_HEADLINE_SIZE, fontname='F0')
+    y_position = 100
+    for chapter, page_num in toc.items():
+        start_y_position = y_position + 0
+        for line in split_text_into_lines(chapter, max_length=70):
+            cur_page.insert_text((50, y_position), line, fontsize=cf.DEFAULT_TEXT_SIZE, fontname="F0")
+            y_position += cf.DEFAULT_TEXT_SIZE + 3
+        y_position -= cf.DEFAULT_TEXT_SIZE + 3
 
-    output_filepath = os.path.splitext(file_path)[0] + cf.OUTPUT_FILENAME_ADDITIVE + '.pfd'
-    reader = PdfReader(filepath)
-    writer = PdfWriter()
+        cur_page.insert_text((500, y_position), str(page_num), fontsize=cf.DEFAULT_TEXT_SIZE, fontname="F0")
+        cur_page.insert_link({"kind": fitz.LINK_GOTO, "page": page_num - 1 + new_page_amount, "from": fitz.Rect(50, start_y_position - cf.DEFAULT_TEXT_SIZE - 2, 520, y_position + 2)})
+        y_position += cf.DEFAULT_TEXT_SIZE + cf.DEFAULT_LINE_SPACING
 
-    page_counter = 0
-    new_reader = PdfReader(linked_pages_filepath)
-    for page in reader.pages:
-        page_counter += 1
-        if page_counter >= page_number and page_counter <= page_number + new_page_amount - 1:
-            for i in len(new_page_amount):
-                writer.add_page(new_reader.pages[i])
-        writer.add_page(page)
+    for pn in range(new_page_amount):
+        page = target_doc.load_page(page_number - 1 + i)
+        page.insert_text((550, 800), str(page_number + pn), fontsize=8, fontname='F0')
 
-    with open(output_filepath, "wb") as output_pdf:
-        writer.write(output_pdf)
+    target_doc.save(output_filepath)
+    target_doc.close()
+
+
+def is_title_page(text: str) -> bool:
+    upbound = min(len(text), 512)
+    input = search_title_tokenizer([text[:upbound]], truncation=True, padding=True, return_tensors='pt')
+    with torch.no_grad():
+        logits = search_title_classifier(**input).logits
+
+    predictions = torch.argmax(logits, dim=-1)
+
+    for pred in predictions:
+        return pred.item()
+
+
+def detect_title_pages(filepath: str, lang: str = 'rus') -> int:
+    last_title_page = 0
+    with open(filepath, 'rb') as file:
+        reader = PdfReader(file)
+
+        for page_num in range(len(reader.pages)):
+            page = reader.pages[page_num]
+            page_text = parse_page_to_text(page, page_num=page_num + 1, filepath=filepath, lang=lang)
+            if is_title_page(page_text):
+                last_title_page += 1
+            else:
+                break
+    return last_title_page
 
 
 def toc_process_pdf_file(filepath: str, lang: str = 'rus', hints: dict = {}) -> None:
     extracted_text = fast_extract_data(filepath, lang=lang, hints=hints)
-    print(extracted_text)
     if extracted_text is None:
         return
 
@@ -205,13 +278,5 @@ def toc_process_pdf_file(filepath: str, lang: str = 'rus', hints: dict = {}) -> 
         return
 
     toc = create_toc_not_exist(extracted_text['pages'])
-    insert_toc(filepath, toc)
-
-
-if __name__ == "__main__":
-    # file_path = cf.TEST_SCAN_NO_TOC_FILE_PATH
-    # file_path = cf.TEST_SCAN_WITH_TOC_FILE_PATH
-    file_path = cf.TEST_TEXT_NO_TOC_FILE_PATH
-    # file_path = cf.TEST_TEXT_WITH_TOC_FILE_PATH
-
-    toc_process_pdf_file(file_path)
+    insert_into = detect_title_pages(filepath, lang) + 1
+    insert_toc(filepath, toc, page_number=insert_into)
