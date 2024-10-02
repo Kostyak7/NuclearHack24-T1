@@ -25,7 +25,6 @@ def process_form_data_async(data_id):
         
         toc_process_pdf_file(filepath, lang=form_data.lang.lower(), hints=hints)
 
-        print("HOORAY!")
         form_data.is_ready = True
         form_data.save()
     except FileForProccess.DoesNotExist:

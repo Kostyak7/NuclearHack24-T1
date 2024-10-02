@@ -83,7 +83,6 @@ def validate_file(f) -> bool:
 
 @csrf_exempt
 def file_form_filled(request):
-    print(request)
     if request.method == 'POST':
         params = validate_params({
             'lang': request.GET.get('lang', 'RUS'),

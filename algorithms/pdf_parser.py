@@ -139,9 +139,7 @@ def fast_extract_data(filepath: str, lang: str = "rus", hints: dict = {}) -> dic
             }
     
     toc_pages = [None] * 2
-    print("IOF-1")
     with open(filepath, 'rb') as file:
-        print("IOF-1.1")
         reader = PyPDF2.PdfReader(file)
         pages_amount = len(reader.pages)
         pages_amount_div_4 = pages_amount // 4
@@ -150,7 +148,6 @@ def fast_extract_data(filepath: str, lang: str = "rus", hints: dict = {}) -> dic
             page = reader.pages[page_num]
             parsed_text[page_num + 1] = parse_page_to_text(page, page_num=page_num + 1, filepath=filepath, lang=lang)
             
-            print(parsed_text[page_num + 1])
             if page_num <= pages_amount_div_4 or page_num >= pages_amount - pages_amount_div_4:
                 if is_table_of_contents(parsed_text[page_num + 1]):
                     if toc_pages[0] == None:
@@ -158,7 +155,6 @@ def fast_extract_data(filepath: str, lang: str = "rus", hints: dict = {}) -> dic
                     toc_pages[1] = page_num + 1
                 elif toc_pages[1] is not None and page_num + 1 > toc_pages[1]:
                     break
-    print("IOF-2")
     hyperlinks = extract_links_from_pdf(filepath, toc_pages)
 
     return {
