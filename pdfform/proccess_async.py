@@ -28,3 +28,5 @@ def process_form_data_async(data_id):
         form_data.save()
     except FileForProccess.DoesNotExist:
         pass
+    except:
+        pass

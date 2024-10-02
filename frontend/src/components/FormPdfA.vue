@@ -7,13 +7,13 @@
                     <label for="formFile" class="form-label">PDF файл</label>
                     <input ref="file" class="form-control" type="file" id="formFile" accept=".pdf" v-on:change="handleFileUpload()">
                 </div>
-                <div class="form__line">
+                <!-- <div class="form__line">
                     <label class="form-label">Язык документа</label>
                     <select ref="lang" class="form-select" aria-label="Type of " id="formPDFLang" v-model="formPDFLang">
                         <option selected value="RUS">Русский</option>
                         <option value="ENG">Английский</option>
                     </select>
-                </div>
+                </div> -->
                 
                 <div>
                   <p style="color: #843A4E; font-size: 15px">Вы можете попробовать ускорить обработку, указав некоторые сведения о файле ниже.</p>
@@ -132,7 +132,8 @@ export default {
               formData,
               {
                 params: {
-                  lang: this.$refs.lang.value,
+                  // lang: this.$refs.lang.value,
+                  lang: 'RUS',
 
                   has_toc_hint: has_toc_hint,
                   toc_range_start_hint: toc_range_start_hint,
