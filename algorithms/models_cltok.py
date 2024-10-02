@@ -5,7 +5,7 @@ from transformers import BertTokenizer, BertForSequenceClassification
 from . import config as cf
 
 
-# pytesseract.pytesseract.tesseract_cmd = cf.TESSERACT_CMD
+pytesseract.pytesseract.tesseract_cmd = cf.TESSERACT_CMD
 
 create_toc_tokenizer = T5Tokenizer.from_pretrained("cointegrated/rut5-base-absum"  )
 create_toc_model = T5ForConditionalGeneration.from_pretrained("cointegrated/rut5-base-absum"  )

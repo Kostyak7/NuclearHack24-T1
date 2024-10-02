@@ -22,7 +22,8 @@ SEARCH_TOC_MODEL_DIR_PATH = MY_MODELS_DIR_PATH + tcf.SEARCH_TOC_MODEL_DIR_PATH
 SEARCH_TITLE_MODEL_DIR_PATH = MY_MODELS_DIR_PATH + tcf.SEARCH_TITLE_MODEL_DIR_PATH
 
 
-KEY_STRUCTURE_WORDS = set(['глава', 'часть', 'раздел', 'введение', 'вывод', 'заключение', 'подраздел'])
+KEY_STRUCTURE_WORDS_ALONE = set(['введение', 'вывод', 'заключение'])
+KEY_STRUCTURE_WORDS = set(['глава', 'часть', 'раздел', 'введение', 'подраздел', 'пункт'])
 TOC_SEARCH_KEYWORDS = ["содержание", "таблица содержимого", "список", "оглавление", "содержимое"]
 
 OUTPUT_FILENAME_ADDITIVE = '_output'

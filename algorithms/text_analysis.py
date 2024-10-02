@@ -51,7 +51,7 @@ def create_hyperlinks_for_existing_toc_not_scan(filepath: str, toc: dict, toc_ra
                 
                 line_text = "".join(span["text"] for span in line["spans"]).strip()
                 
-                if line_text in toc:
+                if line_text in toc and toc[line_text] <= doc.page_count:
                     rect = fitz.Rect(block["bbox"][0], y1, block["bbox"][2], y2)
                     page.insert_link({
                         "kind": fitz.LINK_GOTO,
@@ -126,8 +126,9 @@ def try_extract_structure(pages: dict) -> dict:
                 if cur_number and cur_number > prev_number:
                     prev_number = cur_number
                     toc[stripped_line] = page_num
-            first_word = stripped_line if stripped_line else ""
-            if first_word.lower() in cf.KEY_STRUCTURE_WORDS and kw_pattern.match(stripped_line):
+            
+            first_word = stripped_line.split()[0] if stripped_line else ""
+            if (stripped_line.lower() in cf.KEY_STRUCTURE_WORDS or first_word.lower() in cf.KEY_STRUCTURE_WORDS_ALONE) and kw_pattern.match(stripped_line):
                 toc[stripped_line] = page_num
     return toc if len(toc) > 1 else None
 
@@ -145,7 +146,7 @@ def text_tiling_toc_generating(pages: dict) -> dict:
     segments = text_tiling(text, block_size=2, threshold=0.15)
     segment_index = 0
     for page_num, page_text in pages.items():
-        if segments[segment_index][:min(len(segments[segment_index], 40))] in page_text:
+        if segments[segment_index][:min(len(segments[segment_index]), 40)] in page_text:
             chapter = generate_headline(segments[segment_index], n_words=8,)
             toc[chapter] = page_num
             segment_index += 1
@@ -191,7 +192,7 @@ def create_toc_not_exist(pages: str) -> dict:
     toc = try_extract_structure(pages)
     if toc is not None:
         return toc
-        
+    
     toc = text_tiling_toc_generating(pages)
     if toc is not None:
         return toc
@@ -234,12 +235,20 @@ def insert_toc(filepath: str, toc: dict, page_number: int = 2) -> None:
     for i in range(new_page_amount):
         target_doc.move_page(target_doc.page_count - new_page_amount + i, page_number - 1 + i)
     
-    cur_page = target_doc.load_page(page_number - 1)
+    page_iter = page_number - 1
+    cur_page = target_doc.load_page(page_iter)
     cur_page.insert_font(fontfile=cf.ARIAL_FONT_PATH, fontname="F0")
     # cur_page.insert_font(fontfile=cf.ARIAL_BOLD_FONT_PATH, fontname="F0_BOLD")
     cur_page.insert_text((80, 50), "Содержание", fontsize=cf.DEFAULT_HEADLINE_SIZE, fontname='F0')
     y_position = 100
     for chapter, page_num in toc.items():
+        if page_num > target_doc.page_count:
+            continue
+        if y_position > 720:
+            y_position = 70
+            page_iter += 1
+            cur_page = target_doc.load_page(page_iter)
+            cur_page.insert_font(fontfile=cf.ARIAL_FONT_PATH, fontname="F0")
         start_y_position = y_position + 0
         for line in split_text_into_lines(chapter, max_length=70):
             cur_page.insert_text((50, y_position), line, fontsize=cf.DEFAULT_TEXT_SIZE, fontname="F0")
@@ -290,6 +299,7 @@ def toc_process_pdf_file(filepath: str, lang: str = 'rus', hints: dict = {}) -> 
     if not check_filepath(filepath):
         return
     extracted_text = fast_extract_data(filepath, lang=lang, hints=hints)
+    print(extracted_text)
     if extracted_text is None:
         return
 
@@ -299,12 +309,13 @@ def toc_process_pdf_file(filepath: str, lang: str = 'rus', hints: dict = {}) -> 
     if extracted_text['has_toc']:
         toc = extract_toc(extracted_text['pages'], extracted_text['toc_range'])
 
-        is_text = False
+        is_text = True
         with open(filepath, 'rb') as file:
             reader = PdfReader(file)
-            page = reader.pages[extracted_text['toc_range'][0]]
-            text = page.extract_text()
-            is_text = text and text.strip()
+            for page_num in len(extracted_text['toc_range'][0], extracted_text['toc_range'][1] + 1):
+                page = reader.pages[page_num]
+                text = page.extract_text()
+                is_text = text and text.strip() and is_text
         if is_text:
             create_hyperlinks_for_existing_toc_not_scan(filepath, toc, extracted_text['toc_range'])
         else:
