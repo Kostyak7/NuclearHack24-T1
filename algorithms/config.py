@@ -1,4 +1,4 @@
-from .models_cltok import training_config as tcf
+from .my_models import training_config as tcf
 
 TRAIN_MODE = True
 

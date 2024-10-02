@@ -2,7 +2,7 @@ import torch
 from nltk.tokenize import sent_tokenize
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from ..models_cltok import model, tokenizer
+from ..models_cltok import create_toc_model, create_toc_tokenizer
 
 
 def generate_headline(
@@ -14,14 +14,14 @@ def generate_headline(
         text = f'headline [{n_words}] | ' + text
     elif compression:
         text = '[{0:.1g}] '.format(compression) + text
-    x = tokenizer(text, return_tensors='pt', padding=True).to(model.device)
+    x = create_toc_tokenizer(text, return_tensors='pt', padding=True).to(create_toc_model.device)
     with torch.inference_mode():
-        out = model.generate(
+        out = create_toc_model.generate(
             **x, 
             max_length=max_length, num_beams=num_beams, repetition_penalty=repetition_penalty, 
             **kwargs
         )
-    return tokenizer.decode(out[0], skip_special_tokens=True)
+    return create_toc_tokenizer.decode(out[0], skip_special_tokens=True)
 
 
 def get_blocks(sentences: list, block_size: int) -> list:
