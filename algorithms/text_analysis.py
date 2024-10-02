@@ -8,7 +8,7 @@ from PyPDF2 import PdfReader, PdfWriter
 from . import config as cf
 from .models_cltok import search_title_classifier, search_title_tokenizer
 from .my_models.create_toc_model import generate_headline, text_tiling
-from .pdf_parser import fast_extract_data, full_extract_data, parse_page_to_text
+from .pdf_parser import fast_extract_data, full_extract_data, parse_page_to_text, check_filepath
 
 
 def extract_number_from_end(text: str) -> int:
@@ -77,6 +77,38 @@ def insert_exsisting_toc_for_scan(filepath: str, toc: str, toc_range: list):
     insert_toc(filepath, toc, toc_range[0])
 
 
+def roman_to_arabic(roman: str) -> int:
+    roman_to_arabic_map = { 'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000 }
+    total = 0
+    prev_value = 0
+    for char in reversed(roman):
+        value = roman_to_arabic_map[char]
+        if value < prev_value:
+            total -= value
+        else:
+            total += value
+        prev_value = value
+    return total
+
+
+def is_roman(roman: str) -> bool:
+    roman_to_arabic_map = { 'I': 1, 'V': 5, 'X': 10, 'L': 50, 'C': 100, 'D': 500, 'M': 1000 }
+    return all(char in roman_to_arabic_map for char in roman)
+
+
+def replace_roman_with_arabic(text: str) -> str:
+    if '.' not in text:
+        return text
+    before_dot = text.split('.')[0].strip()    
+
+    if is_roman(before_dot):
+        arabic_value = roman_to_arabic(before_dot)
+        new_text = text.replace(before_dot, str(arabic_value))
+        return new_text
+    else:
+        return text 
+
+
 def try_extract_structure(pages: dict) -> dict:
     toc = {}
     num_pattern = re.compile(r'^(?P<number>\d+(\.\d+)*)\.\s+(?P<text>[^.!?,]*[a-zA-Zа-яА-Я])$')
@@ -87,14 +119,14 @@ def try_extract_structure(pages: dict) -> dict:
         lines = text.splitlines()
         for line in lines:
             stripped_line = line.strip()
-            first_word = stripped_line.split()[0] if stripped_line else ""
-            match_str = num_pattern.match(stripped_line)
+            non_arabic_line = replace_roman_with_arabic(stripped_line)
+            match_str = num_pattern.match(non_arabic_line)
             if match_str:
-                print(match_str.group(0), match_str.group(1))
                 cur_number = list(map(int, match_str.group(1).split('.')))
                 if cur_number and cur_number > prev_number:
                     prev_number = cur_number
                     toc[stripped_line] = page_num
+            first_word = stripped_line if stripped_line else ""
             if first_word.lower() in cf.KEY_STRUCTURE_WORDS and kw_pattern.match(stripped_line):
                 toc[stripped_line] = page_num
     return toc if len(toc) > 1 else None
@@ -117,7 +149,6 @@ def text_tiling_toc_generating(pages: dict) -> dict:
             chapter = generate_headline(segments[segment_index], n_words=8,)
             toc[chapter] = page_num
             segment_index += 1
-    print(toc)
     return toc
 
 
@@ -255,6 +286,8 @@ def detect_title_pages(filepath: str, lang: str = 'rus') -> int:
 
 
 def toc_process_pdf_file(filepath: str, lang: str = 'rus', hints: dict = {}) -> None:
+    if not check_filepath(filepath):
+        return
     extracted_text = fast_extract_data(filepath, lang=lang, hints=hints)
     if extracted_text is None:
         return

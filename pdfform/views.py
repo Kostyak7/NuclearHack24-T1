@@ -17,6 +17,18 @@ class FileFormView(View):
         return render(request, '_base_vue.html')
 
 
+def try_str_to_int(str_: str) -> int:
+    if str_ is None:
+        return -1
+    try:
+        res = int(str_)
+        if res <= 0:
+            return - 1
+        return res
+    except:
+        return -1
+
+
 def handle_uploaded_file(f, params: dict) -> list:
     if not os.path.exists(FileForProccess.file_path):
         os.mkdir(FileForProccess.file_path)
@@ -32,8 +44,8 @@ def handle_uploaded_file(f, params: dict) -> list:
             destination.write(chunk)
     db_object = None
     toc_range = [
-        -1 if params["toc_range"][0] is None else params["toc_range"][0],
-        -1 if params["toc_range"][1] is None else params["toc_range"][1],
+        try_str_to_int(params["toc_range"][0]),
+        try_str_to_int(params["toc_range"][1])
     ]
     has_toc = params['has_toc']
     if has_toc is not None and has_toc and (toc_range[0] <= 0 or toc_range[1] <= 0 or toc_range[1] < toc_range[0]):
@@ -52,9 +64,13 @@ def validate_params(data: dict):
     keys = data.keys()
     if 'lang' not in keys or data['lang'] != 'RUS' and data['lang'] != 'ENG':
         return False
-    return {
+    result = {
         'lang': str(data['lang']),
+
+        'has_toc': data['has_toc'],
+        'toc_range': data['toc_range']
     }
+    return result
 
 
 def is_format(filename, format='pdf') -> bool:
