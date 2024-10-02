@@ -236,7 +236,7 @@ def insert_toc(filepath: str, toc: dict, page_number: int = 2) -> None:
     
     cur_page = target_doc.load_page(page_number - 1)
     cur_page.insert_font(fontfile=cf.ARIAL_FONT_PATH, fontname="F0")
-    cur_page.insert_font(fontfile=cf.ARIAL_BOLD_FONT_PATH, fontname="F0_BOLD")
+    # cur_page.insert_font(fontfile=cf.ARIAL_BOLD_FONT_PATH, fontname="F0_BOLD")
     cur_page.insert_text((80, 50), "Содержание", fontsize=cf.DEFAULT_HEADLINE_SIZE, fontname='F0')
     y_position = 100
     for chapter, page_num in toc.items():
@@ -251,7 +251,8 @@ def insert_toc(filepath: str, toc: dict, page_number: int = 2) -> None:
         y_position += cf.DEFAULT_TEXT_SIZE + cf.DEFAULT_LINE_SPACING
 
     for pn in range(new_page_amount):
-        page = target_doc.load_page(page_number - 1 + i)
+        page = target_doc.load_page(page_number - 1 + pn)
+        page.insert_font(fontfile=cf.ARIAL_FONT_PATH, fontname="F0")
         page.insert_text((550, 800), str(page_number + pn), fontsize=8, fontname='F0')
 
     target_doc.save(output_filepath)
