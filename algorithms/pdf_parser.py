@@ -10,7 +10,7 @@ from .models_cltok import search_toc_classifier, search_toc_tokenizer
 from . import config as cf
 
 
-pytesseract.pytesseract.tesseract_cmd = cf.TESSERACT_CMD
+# pytesseract.pytesseract.tesseract_cmd = cf.TESSERACT_CMD
 
 
 def check_filepath(filepath: str, suffix: str = ".pdf") -> bool:
