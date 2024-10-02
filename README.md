@@ -19,35 +19,22 @@
 В рамках решения представленной задачи было развернут веб-сервис, позволяющий загружать pdf-файлы.
 Ссылка на серис: [https://yourproject7.ru](https://yourproject7.ru)
 
+Сервис работает достаточно слабый, поэтому могут быть задержки в работе.
+
+![image info](https://github.com/Kostyak7/NuclearHack24-T1/blob/main/readme_resources/base.png)
+
 С главной страницы (`/v1/`) можно попасть на страницу заполнения формы (`/v1/form/`).
 На странице с формой можно загрузить pdf-файл, а также указать некоторые вспомогательные настройки для более быстрого обработки файла. Однако если подсказки окажуться неверными, то обработка может занять несколько больше времени.
 
+![image info](https://github.com/Kostyak7/NuclearHack24-T1/blob/main/readme_resources/form_1.png)
+
+![image info](https://github.com/Kostyak7/NuclearHack24-T1/blob/main/readme_resources/form_2.png)
+
 После отправки формы на сервер (`/v1/form/filled`), от сервера должен прийти ответ 201 Created, содержащий id файла в очереди обработки. 
 А также должно  произойти перенаправление на страницу ожидания (`/v1/wait/:id`). Каждую секунду frontend дергает ручку, ожидая окончания обработки файла.
+
+![image info](https://github.com/Kostyak7/NuclearHack24-T1/blob/main/readme_resources/wait_page.png)
+
 Как только пришел положительный ответ, происходит перенаправление на страницу выгрузки результата (`/v1/result/:id`).
 
-
-
-### Локальный запуск программы
-
-Первый запуск:
-```
-build.bat init
-build.bat run
-```
-
-Последующие запуски можно осуществлять с помощью команды:
-```
-build.bat run
-```
-Или, если вам не нужно каждый раз пересобирать frontend:
-```
-python3 manage.py runserver
-```
-
-Обновление версии с git до последней на ветке main. ВАЖНО! Удаляет все, что не соответствует новой версии!
-```
-build.bat update
-```
-
-После успешной сборки вы можете перейти на [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+![image info](https://github.com/Kostyak7/NuclearHack24-T1/blob/main/readme_resources/result_page.png)
